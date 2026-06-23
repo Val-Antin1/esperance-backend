@@ -1,0 +1,78 @@
+const path = require('path');
+const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const morgan = require('morgan');
+const rateLimit = require('express-rate-limit');
+const dotenv = require('dotenv');
+
+const { connectDB } = require('./config/db');
+const { notFound, errorHandler } = require('./middleware/errorMiddleware');
+const authRoutes = require('./routes/authRoutes');
+const studentRoutes = require('./routes/studentRoutes');
+const staffRoutes = require('./routes/staffRoutes');
+const galleryRoutes = require('./routes/galleryRoutes');
+const newsRoutes = require('./routes/newsRoutes');
+const contactRoutes = require('./routes/contactRoutes');
+const settingsRoutes = require('./routes/settingsRoutes');
+const sportRoutes = require('./routes/sportRoutes');
+const dashboardRoutes = require('./routes/dashboardRoutes');
+
+dotenv.config({ path: path.join(__dirname, '.env') });
+connectDB();
+
+const app = express();
+
+app.use(helmet());
+app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+
+// Serve static files for local uploads
+app.use(
+  '/uploads',
+  express.static(path.join(__dirname, 'uploads'), {
+    setHeaders: (res, filePath) => {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    },
+  })
+);
+
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many requests, please try again later.' },
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 15,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many authentication requests, please try again later.' },
+});
+
+app.use('/api', apiLimiter);
+app.use('/api/auth', authLimiter);
+
+app.use('/api/auth', authRoutes);
+app.use('/api/students', studentRoutes);
+app.use('/api/staff', staffRoutes);
+app.use('/api/gallery', galleryRoutes);
+app.use('/api/news', newsRoutes);
+app.use('/api/contact', contactRoutes);
+app.use('/api/settings', settingsRoutes);
+app.use('/api/sports', sportRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+
+app.use(notFound);
+app.use(errorHandler);
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});

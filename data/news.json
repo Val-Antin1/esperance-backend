@@ -1,0 +1,24 @@
+[
+  {
+    "_id": "mqk71c8z0tf84rm4l8t",
+    "title": "Esperance FC U15 Team Wins Regional Championship",
+    "category": "Football",
+    "content": "\r\nOur U15 football team clinched the regional championship with a dramatic 3-2 victory in the final match.",
+    "imageUrl": "http://localhost:5000/uploads/1781829094191-178430336.jfif",
+    "slug": "esperance-fc-u15-team-wins-regional-championship",
+    "createdAt": "2026-06-19T00:31:34.211Z",
+    "updatedAt": "2026-06-19T00:34:29.885Z",
+    "published": true
+  },
+  {
+    "_id": "mqk76hbnx8choj775vo",
+    "title": "esperance U20 basketball team ",
+    "category": "basketball",
+    "content": "Our U15 basketball team clinched the regional championship with a dramatic 3-2 victory in the final match.",
+    "imageUrl": "http://localhost:5000/uploads/1781829334047-125670314.jfif",
+    "slug": "esperance-u20-basketball-team",
+    "createdAt": "2026-06-19T00:35:34.067Z",
+    "updatedAt": "2026-06-19T00:35:36.837Z",
+    "published": true
+  }
+]

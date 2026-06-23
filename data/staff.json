@@ -1,0 +1,38 @@
+[
+  {
+    "_id": "mqk68gvpu7dyhk03v0r",
+    "name": "sauve",
+    "position": "coach",
+    "biography": "he trains the kids from u 10 to u 20",
+    "photo": "http://localhost:5000/uploads/1781827747181-691410355.jfif",
+    "createdAt": "2026-06-19T00:09:07.189Z",
+    "updatedAt": "2026-06-19T00:09:07.190Z"
+  },
+  {
+    "_id": "mqk6dmx03skx2szm0yx",
+    "name": "zendeni",
+    "position": "coach",
+    "biography": "he trains the u 30 to u 70",
+    "photo": "http://localhost:5000/uploads/1781827988283-340092674.jfif",
+    "createdAt": "2026-06-19T00:13:08.292Z",
+    "updatedAt": "2026-06-19T00:13:08.292Z"
+  },
+  {
+    "_id": "mqk6e6kghoqcgicysk",
+    "name": "domy",
+    "position": "manager",
+    "biography": "he manages all program",
+    "photo": "http://localhost:5000/uploads/1781828013742-180955601.jfif",
+    "createdAt": "2026-06-19T00:13:33.760Z",
+    "updatedAt": "2026-06-19T00:13:33.760Z"
+  },
+  {
+    "_id": "mqk6f0toqi81flgiyk",
+    "name": "gracien",
+    "position": "president",
+    "biography": "he is the president of the esperance",
+    "photo": "http://localhost:5000/uploads/1781828052953-705292658.jfif",
+    "createdAt": "2026-06-19T00:14:12.972Z",
+    "updatedAt": "2026-06-19T00:14:12.972Z"
+  }
+]

@@ -1,0 +1,11 @@
+[
+  {
+    "_id": "mqjbcuikfzhk0r9htjf",
+    "name": "Valentin Lyon",
+    "email": "valentinlyon205@gmail.com",
+    "password": "$2b$10$ovz5/78CJfP8jyE5j9Wj9OxucQPGSoDWxqQSj3IjvJtb1ZyyREI.W",
+    "role": "super_admin",
+    "createdAt": "2026-06-18T09:44:43.388Z",
+    "updatedAt": "2026-06-18T09:44:43.389Z"
+  }
+]

@@ -1,0 +1,63 @@
+const jwt = require('jsonwebtoken');
+const { getCollection } = require('../config/db');
+
+const protect = (req, res, next) => {
+  let token;
+
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    token = req.headers.authorization.split(' ')[1];
+  }
+
+  if (!token) {
+    return res.status(401).json({ success: false, message: 'Not authorized, token missing' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const usersCol = getCollection('users');
+    const user = usersCol.findById(decoded.id);
+
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'User not found' });
+    }
+
+    req.user = user;
+    next();
+  } catch (error) {
+    return res.status(401).json({ success: false, message: 'Not authorized, invalid token' });
+  }
+};
+
+const optionalProtect = (req, res, next) => {
+  let token;
+
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    token = req.headers.authorization.split(' ')[1];
+  }
+
+  if (!token) {
+    return next();
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const usersCol = getCollection('users');
+    const user = usersCol.findById(decoded.id);
+    if (user) {
+      req.user = user;
+    }
+  } catch (error) {
+    // ignore invalid token on optional route
+  }
+
+  next();
+};
+
+const authorizeRoles = (...roles) => (req, res, next) => {
+  if (!req.user || !roles.includes(req.user.role)) {
+    return res.status(403).json({ success: false, message: 'Forbidden: insufficient permissions' });
+  }
+  next();
+};
+
+module.exports = { protect, optionalProtect, authorizeRoles };
