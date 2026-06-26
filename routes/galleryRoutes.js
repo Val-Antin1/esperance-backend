@@ -8,6 +8,7 @@ const {
   getGalleryItem,
   updateGalleryItem,
   deleteGalleryItem,
+  bulkDeleteGalleryItems,
 } = require('../controllers/galleryController');
 
 const router = express.Router();
@@ -41,5 +42,6 @@ router.put(
   updateGalleryItem
 );
 router.delete('/:id', protect, authorizeRoles(...allowedRoles), deleteGalleryItem);
+router.delete('/', protect, authorizeRoles(...allowedRoles), bulkDeleteGalleryItems);
 
 module.exports = router;

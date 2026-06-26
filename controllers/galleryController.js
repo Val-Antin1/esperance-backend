@@ -5,10 +5,16 @@ const { getCollection } = require('../config/db');
 const normalizeImageUrl = (req, file) => {
   if (!file) return null;
   const filePath = file.path || file.url || '';
+  
+  // If it's already a full URL (e.g., from Cloudinary), return as is
   if (filePath.startsWith('http')) return filePath;
+  
   const filename = path.basename(filePath);
-  const origin = `${req.protocol}://${req.get('host')}`;
-  return `${origin}/uploads/${filename}`;
+  
+  // Use BACKEND_URL from environment if available, otherwise fall back to request host
+  const backendUrl = process.env.BACKEND_URL || `${req.protocol}://${req.get('host')}`;
+  
+  return `${backendUrl}/uploads/${filename}`;
 };
 
 exports.createGalleryItem = async (req, res) => {
@@ -120,4 +126,25 @@ exports.deleteGalleryItem = async (req, res) => {
     return res.status(404).json({ success: false, message: 'Gallery item not found' });
   }
   res.status(200).json({ success: true, message: 'Gallery item removed successfully', data: {} });
+};
+
+exports.bulkDeleteGalleryItems = async (req, res) => {
+  const { ids } = req.body;
+  
+  if (!ids || !Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ success: false, message: 'Please provide an array of image IDs to delete' });
+  }
+
+  const galleryCol = getCollection('gallery');
+  
+  try {
+    const result = galleryCol.deleteMany({ _id: { $in: ids } });
+    res.status(200).json({ 
+      success: true, 
+      message: `Successfully deleted ${result.deletedCount} image(s)`,
+      data: { deletedCount: result.deletedCount }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error deleting images', error: error.message });
+  }
 };
