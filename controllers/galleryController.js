@@ -138,7 +138,7 @@ exports.bulkDeleteGalleryItems = async (req, res) => {
   const galleryCol = getCollection('gallery');
   
   try {
-    const result = galleryCol.deleteMany({ _id: { $in: ids } });
+    const result = await galleryCol.deleteMany({ _id: { $in: ids } });
     res.status(200).json({ 
       success: true, 
       message: `Successfully deleted ${result.deletedCount} image(s)`,

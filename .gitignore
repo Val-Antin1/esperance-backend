@@ -9,3 +9,6 @@ logs
 
 # Uploads
 uploads/
+
+# Database files
+data/
