@@ -29,16 +29,6 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
-// Serve static files for local uploads
-app.use(
-  '/uploads',
-  express.static(path.join(__dirname, 'uploads'), {
-    setHeaders: (res, filePath) => {
-      res.setHeader('Access-Control-Allow-Origin', '*');
-      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-    },
-  })
-);
 
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,

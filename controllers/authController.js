@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
 const bcrypt = require('bcrypt');
-const { getCollection } = require('../config/db');
+const User = require('../models/User');
 
 const createToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
@@ -21,8 +21,7 @@ exports.login = async (req, res) => {
   }
 
   const { email, password } = req.body;
-  const usersCol = getCollection('users');
-  const user = usersCol.findOne({ email });
+  const user = await User.findOne({ email });
 
   if (!user) {
     return res.status(401).json({ success: false, message: 'Invalid email or password' });
@@ -60,13 +59,12 @@ exports.createAdmin = async (req, res) => {
   }
 
   const { name, email, password, role = 'admin' } = req.body;
-  const usersCol = getCollection('users');
-  const existingUsers = usersCol.countDocuments();
+  const existingUsers = await User.countDocuments();
 
   if (existingUsers === 0) {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
-    const user = await usersCol.create({ name, email, password: hashedPassword, role: 'super_admin' });
+    const user = await User.create({ name, email, password: hashedPassword, role: 'super_admin' });
     return res.status(201).json({ success: true, message: 'Super admin created', data: { user: formatUser(user) } });
   }
 
@@ -77,13 +75,13 @@ exports.createAdmin = async (req, res) => {
   const allowedRoles = ['admin', 'manager', 'coach'];
   const normalizedRole = allowedRoles.includes(role) ? role : 'admin';
 
-  const existingUser = usersCol.findOne({ email });
+  const existingUser = await User.findOne({ email });
   if (existingUser) {
     return res.status(409).json({ success: false, message: 'Email already exists' });
   }
 
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(password, salt);
-  const user = await usersCol.create({ name, email, password: hashedPassword, role: normalizedRole });
+  const user = await User.create({ name, email, password: hashedPassword, role: normalizedRole });
   res.status(201).json({ success: true, message: 'Admin user created', data: { user: formatUser(user) } });
 };

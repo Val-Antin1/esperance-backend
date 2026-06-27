@@ -1,13 +1,16 @@
 const { validationResult } = require('express-validator');
-const { getCollection } = require('../config/db');
+const WebsiteSettings = require('../models/WebsiteSettings');
 
 exports.getSettings = async (req, res) => {
-  const settingsCol = getCollection('websiteSettings');
-  let settings = settingsCol.findOne();
-  if (!settings) {
-    settings = {};
+  try {
+    let settings = await WebsiteSettings.findOne();
+    if (!settings) {
+      settings = {};
+    }
+    res.status(200).json({ success: true, message: 'Website settings retrieved successfully', data: { settings } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error retrieving settings', error: error.message });
   }
-  res.status(200).json({ success: true, message: 'Website settings retrieved successfully', data: { settings } });
 };
 
 exports.updateSettings = async (req, res) => {
@@ -17,20 +20,23 @@ exports.updateSettings = async (req, res) => {
   }
 
   const updateData = { ...req.body };
-  if (req.files?.logo?.[0]?.path) {
-    updateData.logo = req.files.logo[0].path;
+  if (req.files?.logo?.[0]?.url) {
+    updateData.logo = req.files.logo[0].url;
   }
-  if (req.files?.heroBanner?.[0]?.path) {
-    updateData.heroBanner = req.files.heroBanner[0].path;
+  if (req.files?.heroBanner?.[0]?.url) {
+    updateData.heroBanner = req.files.heroBanner[0].url;
   }
 
-  const settingsCol = getCollection('websiteSettings');
-  const existing = settingsCol.findOne();
-  if (existing) {
-    const settings = settingsCol.findByIdAndUpdate(existing._id, updateData, { new: true, runValidators: true });
-    res.status(200).json({ success: true, message: 'Website settings updated successfully', data: { settings } });
-  } else {
-    const settings = await settingsCol.create(updateData);
-    res.status(200).json({ success: true, message: 'Website settings updated successfully', data: { settings } });
+  try {
+    const existing = await WebsiteSettings.findOne();
+    if (existing) {
+      const settings = await WebsiteSettings.findByIdAndUpdate(existing._id, updateData, { new: true, runValidators: true });
+      res.status(200).json({ success: true, message: 'Website settings updated successfully', data: { settings } });
+    } else {
+      const settings = await WebsiteSettings.create(updateData);
+      res.status(200).json({ success: true, message: 'Website settings updated successfully', data: { settings } });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error updating settings', error: error.message });
   }
 };

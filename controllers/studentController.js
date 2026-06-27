@@ -1,5 +1,5 @@
 const { validationResult } = require('express-validator');
-const { getCollection } = require('../config/db');
+const Student = require('../models/Student');
 
 const createFilter = ({ search, sport, status }) => {
   const filter = {};
@@ -25,11 +25,14 @@ exports.createStudent = async (req, res) => {
     return res.status(400).json({ success: false, message: 'Validation failed', data: { errors: errors.array() } });
   }
 
-  const profilePhoto = req.file?.path || '';
-  const studentsCol = getCollection('students');
-  const student = await studentsCol.create({ ...req.body, profilePhoto });
-
-  res.status(201).json({ success: true, message: 'Student created successfully', data: { student } });
+  const profilePhoto = req.file?.url || '';
+  
+  try {
+    const student = await Student.create({ ...req.body, profilePhoto });
+    res.status(201).json({ success: true, message: 'Student created successfully', data: { student } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error creating student', error: error.message });
+  }
 };
 
 exports.getStudents = async (req, res) => {
@@ -37,41 +40,38 @@ exports.getStudents = async (req, res) => {
   const limit = parseInt(req.query.limit, 10) || 10;
   const sort = req.query.sort || '-createdAt';
   const filter = createFilter(req.query);
-  
-  const studentsCol = getCollection('students');
-  const allStudents = studentsCol.find(filter);
-  
-  // Sort
-  const desc = sort.startsWith('-');
-  const field = desc ? sort.substring(1) : sort;
-  allStudents.sort((a, b) => {
-    const aVal = a[field] || '';
-    const bVal = b[field] || '';
-    if (desc) return aVal < bVal ? 1 : -1;
-    return aVal > bVal ? 1 : -1;
-  });
-  
-  const total = allStudents.length;
-  const students = allStudents.slice((page - 1) * limit, page * limit);
 
-  res.status(200).json({
-    success: true,
-    message: 'Students retrieved successfully',
-    data: {
-      students,
-      pagination: { total, page, limit, totalPages: Math.ceil(total / limit) },
-    },
-  });
+  try {
+    const total = await Student.countDocuments(filter);
+    const students = await Student.find(filter)
+      .sort(sort)
+      .skip((page - 1) * limit)
+      .limit(limit);
+
+    res.status(200).json({
+      success: true,
+      message: 'Students retrieved successfully',
+      data: {
+        students,
+        pagination: { total, page, limit, totalPages: Math.ceil(total / limit) },
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error retrieving students', error: error.message });
+  }
 };
 
 exports.getStudentById = async (req, res) => {
-  const studentsCol = getCollection('students');
-  const student = studentsCol.findById(req.params.id);
-  if (!student) {
-    return res.status(404).json({ success: false, message: 'Student not found' });
-  }
+  try {
+    const student = await Student.findById(req.params.id);
+    if (!student) {
+      return res.status(404).json({ success: false, message: 'Student not found' });
+    }
 
-  res.status(200).json({ success: true, message: 'Student retrieved successfully', data: { student } });
+    res.status(200).json({ success: true, message: 'Student retrieved successfully', data: { student } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error retrieving student', error: error.message });
+  }
 };
 
 exports.updateStudent = async (req, res) => {
@@ -81,26 +81,31 @@ exports.updateStudent = async (req, res) => {
   }
 
   const updatedData = { ...req.body };
-  if (req.file?.path) {
-    updatedData.profilePhoto = req.file.path;
+  if (req.file?.url) {
+    updatedData.profilePhoto = req.file.url;
   }
 
-  const studentsCol = getCollection('students');
-  const student = studentsCol.findByIdAndUpdate(req.params.id, updatedData, { new: true, runValidators: true });
+  try {
+    const student = await Student.findByIdAndUpdate(req.params.id, updatedData, { new: true, runValidators: true });
+    if (!student) {
+      return res.status(404).json({ success: false, message: 'Student not found' });
+    }
 
-  if (!student) {
-    return res.status(404).json({ success: false, message: 'Student not found' });
+    res.status(200).json({ success: true, message: 'Student updated successfully', data: { student } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error updating student', error: error.message });
   }
-
-  res.status(200).json({ success: true, message: 'Student updated successfully', data: { student } });
 };
 
 exports.deleteStudent = async (req, res) => {
-  const studentsCol = getCollection('students');
-  const student = studentsCol.findByIdAndDelete(req.params.id);
-  if (!student) {
-    return res.status(404).json({ success: false, message: 'Student not found' });
-  }
+  try {
+    const student = await Student.findByIdAndDelete(req.params.id);
+    if (!student) {
+      return res.status(404).json({ success: false, message: 'Student not found' });
+    }
 
-  res.status(200).json({ success: true, message: 'Student removed successfully', data: {} });
+    res.status(200).json({ success: true, message: 'Student removed successfully', data: {} });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error deleting student', error: error.message });
+  }
 };

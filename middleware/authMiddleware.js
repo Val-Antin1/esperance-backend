@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { getCollection } = require('../config/db');
+const User = require('../models/User');
 
 const protect = (req, res, next) => {
   let token;
@@ -14,8 +14,7 @@ const protect = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const usersCol = getCollection('users');
-    const user = usersCol.findById(decoded.id);
+    const user = User.findById(decoded.id);
 
     if (!user) {
       return res.status(401).json({ success: false, message: 'User not found' });
@@ -41,8 +40,7 @@ const optionalProtect = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const usersCol = getCollection('users');
-    const user = usersCol.findById(decoded.id);
+    const user = User.findById(decoded.id);
     if (user) {
       req.user = user;
     }

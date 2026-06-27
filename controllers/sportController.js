@@ -1,5 +1,5 @@
 const { validationResult } = require('express-validator');
-const { getCollection } = require('../config/db');
+const Sport = require('../models/Sport');
 
 exports.createSport = async (req, res) => {
   const errors = validationResult(req);
@@ -7,10 +7,14 @@ exports.createSport = async (req, res) => {
     return res.status(400).json({ success: false, message: 'Validation failed', data: { errors: errors.array() } });
   }
 
-  const bannerImage = req.file?.path || '';
-  const sportsCol = getCollection('sports');
-  const sport = await sportsCol.create({ ...req.body, bannerImage });
-  res.status(201).json({ success: true, message: 'Sport created successfully', data: { sport } });
+  const bannerImage = req.file?.url || '';
+  
+  try {
+    const sport = await Sport.create({ ...req.body, bannerImage });
+    res.status(201).json({ success: true, message: 'Sport created successfully', data: { sport } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error creating sport', error: error.message });
+  }
 };
 
 exports.getSports = async (req, res) => {
@@ -19,39 +23,38 @@ exports.getSports = async (req, res) => {
   const sort = req.query.sort || '-createdAt';
   const search = req.query.search;
 
-  const sportsCol = getCollection('sports');
   const filter = {};
   if (search) {
     filter.name = new RegExp(search, 'i');
   }
 
-  const allSports = sportsCol.find(filter);
-  const desc = sort.startsWith('-');
-  const field = desc ? sort.substring(1) : sort;
-  allSports.sort((a, b) => {
-    const aVal = a[field] || '';
-    const bVal = b[field] || '';
-    if (desc) return aVal < bVal ? 1 : -1;
-    return aVal > bVal ? 1 : -1;
-  });
+  try {
+    const total = await Sport.countDocuments(filter);
+    const sports = await Sport.find(filter)
+      .sort(sort)
+      .skip((page - 1) * limit)
+      .limit(limit);
 
-  const total = allSports.length;
-  const sports = allSports.slice((page - 1) * limit, page * limit);
-
-  res.status(200).json({
-    success: true,
-    message: 'Sports retrieved successfully',
-    data: { sports, pagination: { total, page, limit, totalPages: Math.ceil(total / limit) } },
-  });
+    res.status(200).json({
+      success: true,
+      message: 'Sports retrieved successfully',
+      data: { sports, pagination: { total, page, limit, totalPages: Math.ceil(total / limit) } },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error retrieving sports', error: error.message });
+  }
 };
 
 exports.getSportById = async (req, res) => {
-  const sportsCol = getCollection('sports');
-  const sport = sportsCol.findById(req.params.id);
-  if (!sport) {
-    return res.status(404).json({ success: false, message: 'Sport not found' });
+  try {
+    const sport = await Sport.findById(req.params.id);
+    if (!sport) {
+      return res.status(404).json({ success: false, message: 'Sport not found' });
+    }
+    res.status(200).json({ success: true, message: 'Sport retrieved successfully', data: { sport } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error retrieving sport', error: error.message });
   }
-  res.status(200).json({ success: true, message: 'Sport retrieved successfully', data: { sport } });
 };
 
 exports.updateSport = async (req, res) => {
@@ -61,21 +64,29 @@ exports.updateSport = async (req, res) => {
   }
 
   const updatedData = { ...req.body };
-  if (req.file?.path) updatedData.bannerImage = req.file.path;
-
-  const sportsCol = getCollection('sports');
-  const sport = sportsCol.findByIdAndUpdate(req.params.id, updatedData, { new: true, runValidators: true });
-  if (!sport) {
-    return res.status(404).json({ success: false, message: 'Sport not found' });
+  if (req.file?.url) {
+    updatedData.bannerImage = req.file.url;
   }
-  res.status(200).json({ success: true, message: 'Sport updated successfully', data: { sport } });
+
+  try {
+    const sport = await Sport.findByIdAndUpdate(req.params.id, updatedData, { new: true, runValidators: true });
+    if (!sport) {
+      return res.status(404).json({ success: false, message: 'Sport not found' });
+    }
+    res.status(200).json({ success: true, message: 'Sport updated successfully', data: { sport } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error updating sport', error: error.message });
+  }
 };
 
 exports.deleteSport = async (req, res) => {
-  const sportsCol = getCollection('sports');
-  const sport = sportsCol.findByIdAndDelete(req.params.id);
-  if (!sport) {
-    return res.status(404).json({ success: false, message: 'Sport not found' });
+  try {
+    const sport = await Sport.findByIdAndDelete(req.params.id);
+    if (!sport) {
+      return res.status(404).json({ success: false, message: 'Sport not found' });
+    }
+    res.status(200).json({ success: true, message: 'Sport removed successfully', data: {} });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error deleting sport', error: error.message });
   }
-  res.status(200).json({ success: true, message: 'Sport removed successfully', data: {} });
 };
