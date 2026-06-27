@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-const protect = (req, res, next) => {
+const protect = async (req, res, next) => {
   let token;
 
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
@@ -14,7 +14,7 @@ const protect = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = User.findById(decoded.id);
+    const user = await User.findById(decoded.id);
 
     if (!user) {
       return res.status(401).json({ success: false, message: 'User not found' });
@@ -27,7 +27,7 @@ const protect = (req, res, next) => {
   }
 };
 
-const optionalProtect = (req, res, next) => {
+const optionalProtect = async (req, res, next) => {
   let token;
 
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
@@ -40,7 +40,7 @@ const optionalProtect = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = User.findById(decoded.id);
+    const user = await User.findById(decoded.id);
     if (user) {
       req.user = user;
     }
