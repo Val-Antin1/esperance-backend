@@ -4,7 +4,13 @@ const createGalleryItem = async (req, res) => {
   try {
     const { title, category, description } = req.body;
     
-    console.log('📥 Received gallery upload:', { title, category, description, hasFile: !!req.file });
+    console.log('📥 Received gallery upload:', { 
+      title, 
+      category, 
+      description, 
+      hasFile: !!req.file,
+      contentType: req.headers['content-type']
+    });
     
     // Validate required fields
     if (!title || !title.trim()) {
@@ -15,9 +21,22 @@ const createGalleryItem = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Category is required' });
     }
 
+    console.log('📦 Request file info:', {
+      hasFile: !!req.file,
+      fileDetails: req.file ? {
+        filename: req.file.filename,
+        mimetype: req.file.mimetype,
+        size: req.file.size,
+        url: req.file.url
+      } : null
+    });
+    
     const imageUrl = req.file ? req.file.url : null;
     if (!imageUrl) {
-      return res.status(400).json({ success: false, message: 'Image upload is required' });
+      console.error('❌ No image file found in request');
+      console.error('   This means the upload middleware did not process the file');
+      console.error('   Check backend logs for upload middleware errors');
+      return res.status(400).json({ success: false, message: 'Image upload is required. Please select an image file.' });
     }
 
   // Check storage capacity before creating
