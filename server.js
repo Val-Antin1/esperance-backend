@@ -19,17 +19,17 @@ const sportRoutes = require('./routes/sportRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 
 dotenv.config({ path: path.join(__dirname, '.env') });
-connectDB();
 
 const app = express();
 
+// Middleware
 app.use(helmet());
 app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
-
+// Rate limiting
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
@@ -49,6 +49,7 @@ const authLimiter = rateLimit({
 app.use('/api', apiLimiter);
 app.use('/api/auth', authLimiter);
 
+// Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/staff', staffRoutes);
@@ -59,10 +60,24 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/sports', sportRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 
+// Error handling
 app.use(notFound);
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// Start server
+const startServer = async () => {
+  try {
+    await connectDB();
+    console.log('✓ Database connected successfully');
+    
+    const PORT = process.env.PORT || 5000;
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+};
+
+startServer();
