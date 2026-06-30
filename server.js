@@ -22,6 +22,9 @@ dotenv.config({ path: path.join(__dirname, '.env') });
 
 const app = express();
 
+// Trust proxy (required for Render and other proxy services)
+app.set('trust proxy', 1);
+
 // Middleware
 app.use(helmet());
 app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));

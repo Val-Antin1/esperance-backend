@@ -8,19 +8,44 @@ const connectDB = async () => {
     
     // Initialize default admin if no users exist
     const User = require('../models/User');
-    const existing = await User.countDocuments();
+    const email = 'valentinlyon205@gmail.com';
+    const password = 'mamannkunda';
+    const role = 'super_admin';
     
-    if (existing === 0) {
+    console.log('🔍 Checking admin user...');
+    let adminUser = await User.findOne({ email }).select('+password');
+    
+    if (!adminUser) {
+      console.log('⚠️  Admin user not found, creating...');
       const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash('mamannkunda', salt);
+      const hashedPassword = await bcrypt.hash(password, salt);
       
       await User.create({
         name: 'Valentin Lyon',
-        email: 'valentinlyon205@gmail.com',
+        email,
         password: hashedPassword,
-        role: 'super_admin',
+        role,
       });
       console.log('✓ Default admin user created: valentinlyon205@gmail.com / mamannkunda');
+    } else {
+      console.log('👤 Admin user found:', adminUser.email);
+      console.log('   Role:', adminUser.role);
+      console.log('   Has password:', !!adminUser.password);
+      
+      // Always reset password to ensure it's correct
+      console.log('🔑 Resetting password to ensure it works...');
+      const salt = await bcrypt.genSalt(10);
+      const newHash = await bcrypt.hash(password, salt);
+      
+      await User.updateOne(
+        { email },
+        { password: newHash, role }
+      );
+      console.log('✓ Admin user password reset successfully');
+      
+      // Verify the password works
+      const isValid = await bcrypt.compare(password, newHash);
+      console.log('✅ Password verification:', isValid);
     }
     
     return true;
