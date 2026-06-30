@@ -1,16 +1,24 @@
-const { validationResult } = require('express-validator');
 const Gallery = require('../models/Gallery');
 
 const createGalleryItem = async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ success: false, message: 'Validation failed', data: { errors: errors.array() } });
-  }
+  try {
+    const { title, category, description } = req.body;
+    
+    console.log('📥 Received gallery upload:', { title, category, description, hasFile: !!req.file });
+    
+    // Validate required fields
+    if (!title || !title.trim()) {
+      return res.status(400).json({ success: false, message: 'Title is required' });
+    }
+    
+    if (!category) {
+      return res.status(400).json({ success: false, message: 'Category is required' });
+    }
 
-  const imageUrl = req.file ? req.file.url : null;
-  if (!imageUrl) {
-    return res.status(400).json({ success: false, message: 'Image upload is required' });
-  }
+    const imageUrl = req.file ? req.file.url : null;
+    if (!imageUrl) {
+      return res.status(400).json({ success: false, message: 'Image upload is required' });
+    }
 
   // Check storage capacity before creating
   const currentCount = await Gallery.countDocuments();
@@ -22,10 +30,11 @@ const createGalleryItem = async (req, res) => {
     });
   }
 
-  try {
-    const item = await Gallery.create({ ...req.body, imageUrl });
+    const item = await Gallery.create({ title, category, description, imageUrl });
+    console.log('✅ Gallery item created:', item._id);
     res.status(201).json({ success: true, message: 'Gallery item created successfully', data: { gallery: item } });
   } catch (error) {
+    console.error('❌ Error creating gallery item:', error);
     res.status(500).json({ success: false, message: 'Error creating gallery item', error: error.message });
   }
 };
@@ -90,23 +99,33 @@ const getGalleryItem = async (req, res) => {
 };
 
 const updateGalleryItem = async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ success: false, message: 'Validation failed', data: { errors: errors.array() } });
-  }
+  try {
+    const { title, category, description } = req.body;
+    
+    console.log('📥 Received gallery update:', { id: req.params.id, title, category, description, hasFile: !!req.file });
+    
+    // Validate required fields if provided
+    if (title !== undefined && !title.trim()) {
+      return res.status(400).json({ success: false, message: 'Title cannot be empty' });
+    }
+    
+    if (category !== undefined && !category) {
+      return res.status(400).json({ success: false, message: 'Invalid category' });
+    }
 
-  const updatedData = { ...req.body };
+    const updatedData = { ...req.body };
   if (req.file) {
     updatedData.imageUrl = req.file.url;
   }
 
-  try {
     const item = await Gallery.findByIdAndUpdate(req.params.id, updatedData, { new: true, runValidators: true });
     if (!item) {
       return res.status(404).json({ success: false, message: 'Gallery item not found' });
     }
+    console.log('✅ Gallery item updated:', item._id);
     res.status(200).json({ success: true, message: 'Gallery item updated successfully', data: { gallery: item } });
   } catch (error) {
+    console.error('❌ Error updating gallery item:', error);
     res.status(500).json({ success: false, message: 'Error updating gallery item', error: error.message });
   }
 };

@@ -24,12 +24,6 @@ router.post(
   protect,
   authorizeRoles(...allowedRoles),
   uploadSingle('image'),
-  [
-    body('title').notEmpty().withMessage('Title is required'),
-    body('category')
-      .isIn(['Football', "Women's Football", 'Basketball', 'Volleyball', 'Table Tennis', 'German Classes', 'Events'])
-      .withMessage('Valid category is required'),
-  ],
   createGalleryItem
 );
 
@@ -38,7 +32,6 @@ router.put(
   protect,
   authorizeRoles(...allowedRoles),
   uploadSingle('image'),
-  [body('category').optional().isIn(['Football', "Women's Football", 'Basketball', 'Volleyball', 'Table Tennis', 'German Classes', 'Events'])],
   updateGalleryItem
 );
 router.delete('/:id', protect, authorizeRoles(...allowedRoles), deleteGalleryItem);
