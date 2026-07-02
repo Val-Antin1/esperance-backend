@@ -1,21 +1,5 @@
 const multer = require('multer');
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const { cloudinary } = require('../config/cloudinary');
-
-console.log('☁️  Cloudinary config:', {
-  cloudName: process.env.CLOUDINARY_CLOUD_NAME,
-  apiKey: process.env.CLOUDINARY_API_KEY ? '***' : 'NOT SET'
-});
-
-// Use memory storage as fallback to debug
-const memoryStorage = multer.memoryStorage();
-const cloudinaryStorage = new CloudinaryStorage({
-  cloudinary,
-  params: {
-    folder: 'esperancefc',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
-  },
-});
 
 const imageFilter = (req, file, cb) => {
   if (file.mimetype.startsWith('image/')) {
@@ -25,59 +9,97 @@ const imageFilter = (req, file, cb) => {
   }
 };
 
-// Try Cloudinary first, fallback to memory storage for debugging
-let upload;
-try {
-  upload = multer({ 
-    storage: cloudinaryStorage, 
-    fileFilter: imageFilter,
-    limits: {
-      fileSize: 10 * 1024 * 1024 // 10MB limit
-    }
-  });
-  console.log('✅ Using Cloudinary storage');
-} catch (error) {
-  console.error('❌ Cloudinary storage failed, using memory storage:', error);
-  upload = multer({ 
-    storage: memoryStorage, 
-    fileFilter: imageFilter,
-    limits: {
-      fileSize: 10 * 1024 * 1024
-    }
-  });
-}
+const memoryStorage = multer.memoryStorage();
+const upload = multer({ 
+  storage: memoryStorage, 
+  fileFilter: imageFilter,
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit
+  }
+});
 
-const uploadSingle = (fieldName) => {
-  return (req, res, next) => {
+const isCloudinaryConfigured = () => {
+  return Boolean(
+    process.env.CLOUDINARY_CLOUD_NAME &&
+    process.env.CLOUDINARY_API_KEY &&
+    process.env.CLOUDINARY_API_SECRET
+  );
+};
+
+const uploadToCloudinary = (buffer, filename) => {
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder: 'esperancefc',
+        resource_type: 'image',
+        public_id: filename?.replace(/\.[^/.]+$/, ''),
+        overwrite: true,
+      },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result);
+      }
+    );
+
+    uploadStream.end(buffer);
+  });
+};
+
+const uploadSingle = (fieldName, options = {}) => {
+  const { optional = false } = options;
+
+  return async (req, res, next) => {
     console.log(`🔍 Upload middleware called for field: ${fieldName}`);
     console.log(`   Content-Type: ${req.headers['content-type']}`);
-    
-    upload.single(fieldName)(req, res, (err) => {
+
+    if (!isCloudinaryConfigured()) {
+      console.error('❌ Cloudinary is not configured. Missing env vars.');
+      return res.status(500).json({
+        success: false,
+        message: 'Cloudinary is not configured. Please set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET.',
+      });
+    }
+
+    upload.single(fieldName)(req, res, async (err) => {
       if (err) {
         console.error('❌ Multer error:', err);
         return res.status(400).json({ success: false, message: err.message || 'File upload failed' });
       }
-      
-      console.log('📦 After multer - req.file:', req.file ? {
-        filename: req.file.filename,
-        originalname: req.file.originalname,
-        size: req.file.size,
-        url: req.file.url
-      } : 'undefined');
-      
-      if (!req.file) {
-        console.error('❌ CRITICAL: req.file is undefined after multer');
-        console.error('   This indicates Cloudinary upload failed or credentials are invalid');
-        console.error('   Check Cloudinary configuration in backend logs');
-        
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Image upload failed. Please ensure Cloudinary is configured correctly.' 
+
+      if (!req.file || !req.file.buffer) {
+        if (optional) {
+          console.log(`ℹ️ Optional upload field '${fieldName}' was not provided.`);
+          return next();
+        }
+
+        console.error('❌ No file was uploaded or Multer did not parse the file.');
+        return res.status(400).json({
+          success: false,
+          message: 'Image upload failed. Please ensure Cloudinary is configured correctly and the request includes a valid image file.',
         });
       }
-      
-      console.log('✅ Upload successful:', req.file.filename);
-      next();
+
+      try {
+        const result = await uploadToCloudinary(req.file.buffer, req.file.originalname);
+        req.file.url = result.secure_url || result.url;
+        req.file.public_id = result.public_id;
+        req.file.cloudinaryResult = result;
+
+        console.log('✅ Cloudinary upload successful:', {
+          originalname: req.file.originalname,
+          url: req.file.url,
+          public_id: req.file.public_id,
+        });
+
+        next();
+      } catch (uploadError) {
+        console.error('❌ Cloudinary upload error:', uploadError);
+        return res.status(400).json({
+          success: false,
+          message: 'Image upload failed. Please ensure Cloudinary is configured correctly.',
+          error: uploadError.message,
+        });
+      }
     });
   };
 };

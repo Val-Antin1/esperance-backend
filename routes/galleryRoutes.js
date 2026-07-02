@@ -31,7 +31,7 @@ router.put(
   '/:id',
   protect,
   authorizeRoles(...allowedRoles),
-  uploadSingle('image'),
+  uploadSingle('image', { optional: true }),
   updateGalleryItem
 );
 router.delete('/:id', protect, authorizeRoles(...allowedRoles), deleteGalleryItem);

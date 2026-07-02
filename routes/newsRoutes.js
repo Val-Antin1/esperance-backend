@@ -36,7 +36,7 @@ router.put(
   '/:id',
   protect,
   authorizeRoles(...allowedRoles),
-  uploadSingle('image'),
+  uploadSingle('image', { optional: true }),
   [body('title').optional().notEmpty(), body('category').optional().notEmpty()],
   updateNews
 );

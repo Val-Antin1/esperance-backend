@@ -31,7 +31,7 @@ router.put(
   '/:id',
   protect,
   authorizeRoles(...allowedRoles),
-  uploadSingle('photo'),
+  uploadSingle('photo', { optional: true }),
   [body('age').optional().isInt({ min: 1 })],
   updateStaff
 );
