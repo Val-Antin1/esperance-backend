@@ -2,6 +2,7 @@ const Student = require('../models/Student');
 const Staff = require('../models/Staff');
 const Gallery = require('../models/Gallery');
 const News = require('../models/News');
+const WebsiteSettings = require('../models/WebsiteSettings');
 
 exports.getStats = async (req, res) => {
   try {
@@ -9,6 +10,8 @@ exports.getStats = async (req, res) => {
     const totalStaff = await Staff.countDocuments();
     const totalGalleryImages = await Gallery.countDocuments();
     const totalNews = await News.countDocuments();
+    const websiteSettings = await WebsiteSettings.findOne();
+    const visitorCount = websiteSettings?.visitorCount || 0;
 
     res.status(200).json({
       success: true,
@@ -18,6 +21,7 @@ exports.getStats = async (req, res) => {
         totalStaff,
         totalGalleryImages,
         totalNews,
+        visitorCount,
       },
     });
   } catch (error) {

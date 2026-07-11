@@ -6,48 +6,39 @@ const connectDB = async () => {
     const conn = await mongoose.connect(process.env.MONGO_URI);
     console.log(`✓ MongoDB Connected: ${conn.connection.host}`);
     
-    // Initialize default admin if no users exist
     const User = require('../models/User');
-    const email = 'valentinlyon205@gmail.com';
-    const password = 'mamannkunda';
-    const role = 'super_admin';
-    
-    console.log('🔍 Checking admin user...');
-    let adminUser = await User.findOne({ email }).select('+password');
-    
-    if (!adminUser) {
-      console.log('⚠️  Admin user not found, creating...');
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(password, salt);
-      
-      await User.create({
-        name: 'Valentin Lyon',
-        email,
-        password: hashedPassword,
-        role,
-      });
-      console.log('✓ Default admin user created: valentinlyon205@gmail.com / mamannkunda');
-    } else {
-      console.log('👤 Admin user found:', adminUser.email);
-      console.log('   Role:', adminUser.role);
-      console.log('   Has password:', !!adminUser.password);
-      
-      // Always reset password to ensure it's correct
-      console.log('🔑 Resetting password to ensure it works...');
-      const salt = await bcrypt.genSalt(10);
-      const newHash = await bcrypt.hash(password, salt);
-      
-      await User.updateOne(
-        { email },
-        { password: newHash, role }
-      );
-      console.log('✓ Admin user password reset successfully');
-      
-      // Verify the password works
-      const isValid = await bcrypt.compare(password, newHash);
-      console.log('✅ Password verification:', isValid);
+    const adminUsers = [
+      { name: 'Super Admin', email: 'domyserry@yahoo.fr', password: 'esperance1996.', role: 'super_admin' },
+      { name: 'Valentin Lyon', email: 'valentinlyon205@gmail.com', password: 'mamannkunda', role: 'super_admin' },
+    ];
+
+    for (const admin of adminUsers) {
+      console.log(`🔍 Checking admin user ${admin.email}...`);
+      let user = await User.findOne({ email: admin.email }).select('+password');
+      const hashedPassword = await bcrypt.hash(admin.password, 10);
+
+      if (!user) {
+        console.log(`⚠️  Admin user not found, creating ${admin.email}...`);
+        await User.create({
+          name: admin.name,
+          email: admin.email,
+          password: hashedPassword,
+          role: admin.role,
+        });
+        console.log(`✓ Default admin user created: ${admin.email} / ${admin.password}`);
+      } else {
+        console.log('👤 Admin user found:', user.email);
+        console.log('   Role:', user.role);
+        console.log('   Has password:', !!user.password);
+
+        if (user.role !== admin.role || !(await bcrypt.compare(admin.password, user.password))) {
+          console.log(`🔑 Updating admin user ${admin.email} to ensure correct role and password...`);
+          await User.updateOne({ email: admin.email }, { password: hashedPassword, role: admin.role });
+          console.log(`✓ Admin user updated: ${admin.email}`);
+        }
+      }
     }
-    
+
     return true;
   } catch (error) {
     console.error('✗ MongoDB connection error:', error);

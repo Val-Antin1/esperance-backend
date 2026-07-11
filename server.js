@@ -17,6 +17,7 @@ const contactRoutes = require('./routes/contactRoutes');
 const settingsRoutes = require('./routes/settingsRoutes');
 const sportRoutes = require('./routes/sportRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
+const visitorRoutes = require('./routes/visitorRoutes');
 
 dotenv.config({ path: path.join(__dirname, '.env') });
 
@@ -62,6 +63,7 @@ app.use('/api/contact', contactRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/sports', sportRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/visitors', visitorRoutes);
 
 // Error handling
 app.use(notFound);

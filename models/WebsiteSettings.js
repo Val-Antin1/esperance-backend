@@ -13,6 +13,7 @@ const websiteSettingsSchema = new mongoose.Schema(
     youtube: { type: String, trim: true },
     whatsapp: { type: String, trim: true },
     academyDescription: { type: String, trim: true },
+    visitorCount: { type: Number, default: 0 },
   },
   { timestamps: true }
 );
