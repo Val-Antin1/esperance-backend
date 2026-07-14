@@ -42,6 +42,25 @@ const upload = multer({
   },
 });
 
+const getUploadUrl = (req, filePath) => {
+  if (!filePath) return null;
+
+  if (/^https?:\/\//i.test(filePath)) {
+    return filePath;
+  }
+
+  const baseUrl = process.env.BACKEND_URL || process.env.PUBLIC_URL;
+  if (baseUrl) {
+    const normalizedBase = baseUrl.replace(/\/$/, '');
+    return `${normalizedBase}${filePath.startsWith('/') ? filePath : `/${filePath}`}`;
+  }
+
+  const host = req.get('host');
+  const protocol = req.protocol || 'http';
+  const normalizedPath = filePath.startsWith('/') ? filePath : `/${filePath}`;
+  return `${protocol}://${host}${normalizedPath}`;
+};
+
 const uploadSingle = (fieldName, options = {}) => {
   const { optional = false } = options;
 
@@ -68,7 +87,7 @@ const uploadSingle = (fieldName, options = {}) => {
         });
       }
 
-      req.file.url = `/uploads/${req.file.filename}`;
+      req.file.url = getUploadUrl(req, `/uploads/${req.file.filename}`);
       req.file.type = req.file.mimetype.startsWith('video/') ? 'video' : 'image';
 
       console.log('✅ File upload successful:', {
