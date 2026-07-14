@@ -11,6 +11,11 @@ const gallerySchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    type: {
+      type: String,
+      enum: ['image', 'video'],
+      required: true,
+    },
     category: {
       type: String,
       enum: ['Football', "Women's Football", 'Basketball', 'Volleyball', 'Table Tennis', 'German Classes', 'Events'],

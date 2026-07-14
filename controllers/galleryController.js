@@ -3,53 +3,41 @@ const Gallery = require('../models/Gallery');
 const createGalleryItem = async (req, res) => {
   try {
     const { title, category, description } = req.body;
-    
-    console.log('📥 Received gallery upload:', { 
-      title, 
-      category, 
-      description, 
+
+    console.log('📥 Received gallery upload:', {
+      title,
+      category,
+      description,
       hasFile: !!req.file,
-      contentType: req.headers['content-type']
+      contentType: req.headers['content-type'],
     });
-    
-    // Validate required fields
+
     if (!title || !title.trim()) {
       return res.status(400).json({ success: false, message: 'Title is required' });
     }
-    
+
     if (!category) {
       return res.status(400).json({ success: false, message: 'Category is required' });
     }
 
-    console.log('📦 Request file info:', {
-      hasFile: !!req.file,
-      fileDetails: req.file ? {
-        filename: req.file.filename,
-        mimetype: req.file.mimetype,
-        size: req.file.size,
-        url: req.file.url
-      } : null
-    });
-    
     const imageUrl = req.file ? req.file.url : null;
     if (!imageUrl) {
-      console.error('❌ No image file found in request');
-      console.error('   This means the upload middleware did not process the file');
-      console.error('   Check backend logs for upload middleware errors');
-      return res.status(400).json({ success: false, message: 'Image upload is required. Please select an image file.' });
+      console.error('❌ No media file found in request');
+      return res.status(400).json({ success: false, message: 'A media file is required. Please select an image or video file.' });
     }
 
-  // Check storage capacity before creating
-  const currentCount = await Gallery.countDocuments();
-  const MAX_STORAGE = 300;
-  if (currentCount >= MAX_STORAGE) {
-    return res.status(400).json({ 
-      success: false, 
-      message: `The storage is full! Maximum capacity of ${MAX_STORAGE} images reached. Please delete some images before uploading new ones.` 
-    });
-  }
+    const currentCount = await Gallery.countDocuments();
+    const MAX_STORAGE = 300;
+    if (currentCount >= MAX_STORAGE) {
+      return res.status(400).json({
+        success: false,
+        message: `The storage is full! Maximum capacity of ${MAX_STORAGE} items reached. Please delete some gallery items before uploading new ones.`,
+      });
+    }
 
-    const item = await Gallery.create({ title, category, description, imageUrl });
+    const type = req.body.type || (req.file?.mimetype?.startsWith('video/') ? 'video' : 'image');
+
+    const item = await Gallery.create({ title, category, description, imageUrl, type });
     console.log('✅ Gallery item created:', item._id);
     res.status(201).json({ success: true, message: 'Gallery item created successfully', data: { gallery: item } });
   } catch (error) {
@@ -120,22 +108,22 @@ const getGalleryItem = async (req, res) => {
 const updateGalleryItem = async (req, res) => {
   try {
     const { title, category, description } = req.body;
-    
+
     console.log('📥 Received gallery update:', { id: req.params.id, title, category, description, hasFile: !!req.file });
-    
-    // Validate required fields if provided
+
     if (title !== undefined && !title.trim()) {
       return res.status(400).json({ success: false, message: 'Title cannot be empty' });
     }
-    
+
     if (category !== undefined && !category) {
       return res.status(400).json({ success: false, message: 'Invalid category' });
     }
 
     const updatedData = { ...req.body };
-  if (req.file) {
-    updatedData.imageUrl = req.file.url;
-  }
+    if (req.file) {
+      updatedData.imageUrl = req.file.url;
+      updatedData.type = req.file.mimetype?.startsWith('video/') ? 'video' : 'image';
+    }
 
     const item = await Gallery.findByIdAndUpdate(req.params.id, updatedData, { new: true, runValidators: true });
     if (!item) {
