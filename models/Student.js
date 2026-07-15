@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const studentSchema = new mongoose.Schema(
   {
-    fullName: {
+    name: {
       type: String,
       required: true,
       trim: true,
@@ -11,10 +11,16 @@ const studentSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    position: {
+      type: String,
+      required: true,
+      trim: true,
+    },
     gender: {
       type: String,
       enum: ['Male', 'Female', 'Other'],
-      required: true,
+      default: '',
+      trim: true,
     },
     sport: {
       type: String,

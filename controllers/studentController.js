@@ -5,7 +5,8 @@ const createFilter = ({ search, sport, status }) => {
   const filter = {};
   if (search) {
     filter.$or = [
-      { fullName: new RegExp(search, 'i') },
+      { name: new RegExp(search, 'i') },
+      { position: new RegExp(search, 'i') },
       { sport: new RegExp(search, 'i') },
       { gender: new RegExp(search, 'i') },
     ];

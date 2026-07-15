@@ -21,9 +21,10 @@ router.post(
   authorizeRoles(...canManageStudents),
   uploadSingle('profilePhoto'),
   [
-    body('fullName').notEmpty().withMessage('Full name is required'),
+    body('name').notEmpty().withMessage('Name is required'),
+    body('position').notEmpty().withMessage('Position is required'),
     body('age').isInt({ min: 1 }).withMessage('Age must be a valid number'),
-    body('gender').isIn(['Male', 'Female', 'Other']).withMessage('Gender must be Male, Female, or Other'),
+    body('gender').optional().isIn(['Male', 'Female', 'Other']).withMessage('Gender must be Male, Female, or Other'),
     body('sport')
       .isIn(['Football', "Women's Football", 'Basketball', 'Volleyball', 'Table Tennis'])
       .withMessage('Sport must be one of the supported categories'),
@@ -31,14 +32,16 @@ router.post(
   createStudent
 );
 
-router.get('/', protect, authorizeRoles(...canViewStudents), getStudents);
-router.get('/:id', protect, authorizeRoles(...canViewStudents), getStudentById);
+router.get('/', getStudents);
+router.get('/:id', getStudentById);
 router.put(
   '/:id',
   protect,
   authorizeRoles(...canViewStudents),
   uploadSingle('profilePhoto'),
   [
+    body('name').optional().notEmpty().withMessage('Name is required'),
+    body('position').optional().notEmpty().withMessage('Position is required'),
     body('age').optional().isInt({ min: 1 }).withMessage('Age must be a valid number'),
     body('gender').optional().isIn(['Male', 'Female', 'Other']).withMessage('Gender must be Male, Female, or Other'),
     body('sport')
