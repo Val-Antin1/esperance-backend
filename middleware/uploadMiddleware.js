@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
+const { cloudinary } = require('../config/cloudinary');
 
 const uploadsDir = path.join(__dirname, '..', 'uploads');
 if (!fs.existsSync(uploadsDir)) {
@@ -42,6 +43,12 @@ const upload = multer({
   },
 });
 
+const useCloudinary = Boolean(
+  process.env.CLOUDINARY_CLOUD_NAME &&
+  process.env.CLOUDINARY_API_KEY &&
+  process.env.CLOUDINARY_API_SECRET
+);
+
 const getUploadUrl = (req, filePath) => {
   if (!filePath) return null;
 
@@ -68,7 +75,7 @@ const uploadSingle = (fieldName, options = {}) => {
     console.log(`🔍 Upload middleware called for field: ${fieldName}`);
     console.log(`   Content-Type: ${req.headers['content-type']}`);
 
-    upload.single(fieldName)(req, res, (err) => {
+    upload.single(fieldName)(req, res, async (err) => {
       if (err) {
         console.error('❌ Multer error:', err);
         return res.status(400).json({ success: false, message: err.message || 'File upload failed' });
@@ -87,16 +94,46 @@ const uploadSingle = (fieldName, options = {}) => {
         });
       }
 
-      req.file.url = getUploadUrl(req, `/uploads/${req.file.filename}`);
-      req.file.type = req.file.mimetype.startsWith('video/') ? 'video' : 'image';
+      try {
+        let finalUrl = getUploadUrl(req, `/uploads/${req.file.filename}`);
 
-      console.log('✅ File upload successful:', {
-        originalname: req.file.originalname,
-        mimetype: req.file.mimetype,
-        url: req.file.url,
-      });
+        if (useCloudinary) {
+          try {
+            const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+              resource_type: 'auto',
+              folder: 'esperance-academy',
+              public_id: path.basename(req.file.filename, path.extname(req.file.filename)),
+              overwrite: true,
+            });
+            finalUrl = uploadResult.secure_url;
+            console.log('☁️ Uploaded to Cloudinary:', finalUrl);
+          } catch (cloudErr) {
+            console.error('⚠️ Cloudinary upload failed, falling back to local storage:', cloudErr.message);
+          }
+        }
 
-      next();
+        if (useCloudinary && fs.existsSync(req.file.path)) {
+          try {
+            fs.unlinkSync(req.file.path);
+          } catch (cleanupErr) {
+            console.warn('Could not delete temp upload:', cleanupErr.message);
+          }
+        }
+
+        req.file.url = finalUrl;
+        req.file.type = req.file.mimetype.startsWith('video/') ? 'video' : 'image';
+
+        console.log('✅ File upload successful:', {
+          originalname: req.file.originalname,
+          mimetype: req.file.mimetype,
+          url: req.file.url,
+        });
+
+        next();
+      } catch (processingErr) {
+        console.error('❌ File processing error:', processingErr);
+        return res.status(500).json({ success: false, message: 'Image upload processing failed' });
+      }
     });
   };
 };
