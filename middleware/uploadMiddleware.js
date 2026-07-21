@@ -56,16 +56,20 @@ const getUploadUrl = (req, filePath) => {
     return filePath;
   }
 
+  const normalizedPath = filePath.startsWith('/') ? filePath : `/${filePath}`;
+  const apiPath = normalizedPath.startsWith('/uploads/')
+    ? normalizedPath.replace('/uploads/', '/api/uploads/')
+    : normalizedPath;
+
   const baseUrl = process.env.BACKEND_URL || process.env.PUBLIC_URL;
   if (baseUrl) {
     const normalizedBase = baseUrl.replace(/\/$/, '');
-    return `${normalizedBase}${filePath.startsWith('/') ? filePath : `/${filePath}`}`;
+    return `${normalizedBase}${apiPath.startsWith('/') ? apiPath : `/${apiPath}`}`;
   }
 
   const host = req.get('host');
   const protocol = req.protocol || 'http';
-  const normalizedPath = filePath.startsWith('/') ? filePath : `/${filePath}`;
-  return `${protocol}://${host}${normalizedPath}`;
+  return `${protocol}://${host}${apiPath}`;
 };
 
 const uploadSingle = (fieldName, options = {}) => {

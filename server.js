@@ -37,13 +37,20 @@ app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use((req, res, next) => {
-  if (req.originalUrl.startsWith('/uploads/')) {
+  if (req.originalUrl.startsWith('/uploads/') || req.originalUrl.startsWith('/api/uploads/')) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
   }
   next();
 });
 app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+  maxAge: '1y',
+  immutable: true,
+  setHeaders: (res) => {
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+  },
+}));
+app.use('/api/uploads', express.static(path.join(__dirname, 'uploads'), {
   maxAge: '1y',
   immutable: true,
   setHeaders: (res) => {
